@@ -1,50 +1,51 @@
 import os
+import threading
+from flask import Flask
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
+from openai import OpenAI
 
-# 🔑 Récupère le token depuis Render
-TOKEN = os.getenv("TELEGRAM_TOKEN")
+# 🔑 Tokens
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-# 📁 Fichier de notes
-NOTES_PATH = "notes.txt"
+# 🤖 IA
+client = OpenAI(api_key=OPENAI_API_KEY)
 
-# 🤖 Réponse IA (désactivée pour Render)
 def ask_ai(prompt):
-    return "🤖 IA indisponible pour le moment (bientôt améliorée)"
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        print(e)
+        return "❌ Erreur IA"
 
-# 🧠 Gestion des messages
+# 💬 Telegram
 async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_message = update.message.text.strip().lower()
-
-    # ➤ Ajouter une note
-    if user_message.startswith("note:"):
-        content = user_message.replace("note:", "").strip()
-
-        with open(NOTES_PATH, "a", encoding="utf-8") as f:
-            f.write(f"- {content}\n")
-
-        await update.message.reply_text("📝 Note enregistrée")
-        return
-
-    # ➤ Voir les notes
-    if user_message == "notes":
-        try:
-            with open(NOTES_PATH, "r", encoding="utf-8") as f:
-                notes = f.read()
-        except:
-            notes = ""
-
-        await update.message.reply_text(notes if notes else "Aucune note.")
-        return
-
-    # ➤ Réponse IA simple
+    user_message = update.message.text.strip()
     reply = ask_ai(user_message)
     await update.message.reply_text(reply)
 
+def run_bot():
+    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+    app.add_handler(MessageHandler(filters.TEXT, handle))
+    print("🤖 Bot lancé")
+    app.run_polling()
 
-# 🚀 Lancement du bot
-app = ApplicationBuilder().token("8608735032:AAFM3bL13e3FKp3vy9v7OsMRcgkb1VlR0dU").build()
-app.add_handler(MessageHandler(filters.TEXT, handle))
+# 🌐 Web server (clé pour Render)
+web_app = Flask(__name__)
 
-print("✅ Bot lancé")
-app.run_polling()
+@web_app.route('/')
+def home():
+    return "OK"
+
+def run_web():
+    port = int(os.environ.get("PORT", 10000))
+    web_app.run(host="0.0.0.0", port=port)
+
+# 🚀 Lancement parallèle
+threading.Thread(target=run_bot).start()
+run_web()
