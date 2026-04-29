@@ -5,7 +5,7 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
 from openai import OpenAI
 
-# 🔑 Tokens
+# 🔑 Variables
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
@@ -25,8 +25,8 @@ def ask_ai(prompt):
 
 # 💬 Telegram
 async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_message = update.message.text.strip()
-    reply = ask_ai(user_message)
+    text = update.message.text
+    reply = ask_ai(text)
     await update.message.reply_text(reply)
 
 def run_bot():
@@ -35,10 +35,10 @@ def run_bot():
     print("🤖 Bot lancé")
     app.run_polling()
 
-# 🌐 Web server (clé pour Render)
+# 🌐 Web obligatoire pour Render
 web_app = Flask(__name__)
 
-@web_app.route('/')
+@web_app.route("/")
 def home():
     return "OK"
 
@@ -46,6 +46,6 @@ def run_web():
     port = int(os.environ.get("PORT", 10000))
     web_app.run(host="0.0.0.0", port=port)
 
-# 🚀 Lancement parallèle
+# 🚀 Lancement
 threading.Thread(target=run_bot).start()
 run_web()
