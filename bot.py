@@ -5,9 +5,16 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
 from openai import OpenAI
 
-# 🔑 Variables
+# 🔑 Variables d’environnement
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+# 🚨 Vérification
+if not TELEGRAM_TOKEN:
+    raise ValueError("TELEGRAM_TOKEN manquant")
+
+if not OPENAI_API_KEY:
+    raise ValueError("OPENAI_API_KEY manquant")
 
 # 🤖 OpenAI
 client = OpenAI(api_key=OPENAI_API_KEY)
@@ -35,7 +42,7 @@ def run_bot():
     print("🤖 Bot lancé")
     app.run_polling()
 
-# 🌐 Serveur web (obligatoire Render)
+# 🌐 Flask (pour Render)
 web_app = Flask(__name__)
 
 @web_app.route("/")
@@ -46,6 +53,10 @@ def run_web():
     port = int(os.environ.get("PORT", 10000))
     web_app.run(host="0.0.0.0", port=port)
 
-# 🚀 Lancement parallèle
-threading.Thread(target=run_bot).start()
-run_web()
+# 🚀 Lancement CORRECT (fix threading)
+def start():
+    threading.Thread(target=run_web).start()  # Flask en secondaire
+    run_bot()  # Telegram en principal
+
+if __name__ == "__main__":
+    start()
