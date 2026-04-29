@@ -9,7 +9,7 @@ from openai import OpenAI
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-# 🤖 IA
+# 🤖 OpenAI
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 def ask_ai(prompt):
@@ -21,12 +21,12 @@ def ask_ai(prompt):
         return response.choices[0].message.content
     except Exception as e:
         print(e)
-        return "❌ Erreur IA"
+        return "❌ IA indisponible"
 
 # 💬 Telegram
 async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text
-    reply = ask_ai(text)
+    user_text = update.message.text
+    reply = ask_ai(user_text)
     await update.message.reply_text(reply)
 
 def run_bot():
@@ -35,7 +35,7 @@ def run_bot():
     print("🤖 Bot lancé")
     app.run_polling()
 
-# 🌐 Web obligatoire pour Render
+# 🌐 Serveur web (obligatoire Render)
 web_app = Flask(__name__)
 
 @web_app.route("/")
@@ -46,6 +46,6 @@ def run_web():
     port = int(os.environ.get("PORT", 10000))
     web_app.run(host="0.0.0.0", port=port)
 
-# 🚀 Lancement
+# 🚀 Lancement parallèle
 threading.Thread(target=run_bot).start()
 run_web()
